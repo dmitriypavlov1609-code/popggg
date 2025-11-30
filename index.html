@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Pong Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #000;
+      font-family: 'Arial', sans-serif;
+      color: #fff;
+      overflow: hidden;
+    }
+    canvas {
+      border: 2px solid #fff;
+      margin: 10px;
+    }
+    .score {
+      font-size: 24px;
+      margin: 10px;
+    }
+    .instructions {
+      font-size: 14px;
+      color: #888;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="score">Left: <span id="leftScore">0</span> | Right: <span id="rightScore">0</span></div>
+  <canvas id="game" width="320" height="480"></canvas>
+  <div class="instructions">Touch to move left paddle</div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const leftScoreElem = document.getElementById('leftScore');
+    const rightScoreElem = document.getElementById('rightScore');
+
+    // Параметры игры
+    const paddleWidth = 10;
+    const paddleHeight = 100;
+    const ballSize = 10;
+    let ballX = canvas.width / 2;
+    let ballY = canvas.height / 2;
+    let ballSpeedX = 3;
+    let ballSpeedY = 2;
+    let leftPaddleY = canvas.height / 2 - paddleHeight / 2;
+    let rightPaddleY = canvas.height / 2 - paddleHeight / 2;
+    let leftScore = 0;
+    let rightScore = 0;
+
+    // Управление (касание)
+    canvas.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      const touchY = touch.clientY - canvas.getBoundingClientRect().top;
+      leftPaddleY = touchY - paddleHeight / 2;
+      
+      // Ограничение по границам
+      if (leftPaddleY < 0) leftPaddleY = 0;
+      if (leftPaddleY > canvas.height - paddleHeight) leftPaddleY = canvas.height - paddleHeight;
+    });
+
+    // Основной игровой цикл
+    function gameLoop() {
+      // Очищаем холст
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Рисуем ракетки
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, leftPaddleY, paddleWidth, paddleHeight); // Левая
+      ctx.fillRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, paddleHeight); // Правая
+
+      // Рисуем мяч
+      ctx.fillRect(ballX, ballY, ballSize, ballSize);
+
+      // Движем мяч
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      // Столкновение с верхней/нижней границей
+      if (ballY <= 0 || ballY >= canvas.height - ballSize) {
+        ballSpeedY *= -1;
+      }
+
+      // Столкновение с левой ракеткой
+      if (
+        ballX <= paddleWidth &&
+        ballY >= leftPaddleY &&
+        ballY <= leftPaddleY + paddleHeight
+      ) {
+        ballSpeedX *= -1;
+        ballX = paddleWidth; // Избегаем «залипания»
+      }
+
+      // Столкновение с правой ракеткой (ИИ)
+      if (
+        ballX >= canvas.width - paddleWidth - ballSize &&
+        ballY >= rightPaddleY &&
+        ballY <= rightPaddleY + paddleHeight
+      ) {
+        ballSpeedX *= -1;
+        ballX = canvas.width - paddleWidth - ballSize;
+      }
+
+      // Гол (выход за границы по X)
+      if (ballX < 0) {
+        rightScore++;
+        rightScoreElem.textContent = rightScore;
+        resetBall();
+      } else if (ballX > canvas.width) {
+        leftScore++;
+        leftScoreElem.textContent = leftScore;
+        resetBall();
+      }
+
+      // ИИ для правой ракетки (следит за мячом)
+      const rightPaddleCenter = rightPaddleY + paddleHeight / 2;
+      if (rightPaddleCenter < ballY + ballSize / 2) {
+        rightPaddleY += 3.5;
+      } else {
+        rightPaddleY -= 3.5;
+      }
+      // Ограничение по границам
+      if (rightPaddleY < 0) rightPaddleY = 0;
+      if (rightPaddleY > canvas.height - paddleHeight) rightPaddleY = canvas.height - paddleHeight;
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Сброс мяча в центр
+    function resetBall() {
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * 3;
+      ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * 2;
+    }
+
+    // Запуск игры
+    gameLoop();
+  </script>
+</body>
+</html>
